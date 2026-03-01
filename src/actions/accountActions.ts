@@ -8,7 +8,7 @@ export async function getAccounts() {
     });
 }
 
-export async function createAccount(data: { name: string; type: string; currency?: string; balance?: number; monthlyPayment?: number }) {
+export async function createAccount(data: { name: string; type: string; currency: string; balance: number; monthlyPayment?: number }) {
     const account = await prisma.account.create({ data });
     revalidatePath("/");
     return account;

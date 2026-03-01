@@ -20,14 +20,16 @@ model Account {
 }
 
 model Investment {
-  id           String   @id @default(cuid())
-  name         String   // e.g. "NVDA", "0050"
-  type         String   // STOCK, FUND, BOND, CRYPTO
-  currency     String   // TWD, USD, CNY
-  shares       Float
-  currentPrice Float
-  category     String   // e.g. "Liquid Assets", "Fixed Assets"
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  symbol          String
+  name            String   // e.g. "NVDA", "0050"
+  type            String   // STOCK, FUND, BOND, CRYPTO
+  currency        String   // TWD, USD, CNY
+  shares          Float
+  averageBuyPrice Float
+  currentPrice    Float
+  category        String   // e.g. "Liquid Assets", "Fixed Assets"
+  updatedAt       DateTime @updatedAt
 }
 
 model Transaction {

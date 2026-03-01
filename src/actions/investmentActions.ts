@@ -9,8 +9,13 @@ export async function getInvestments() {
     });
 }
 
-export async function createInvestment(data: { symbol: string; name: string; type: string; shares: number; averageBuyPrice: number; currentPrice: number; currency?: string }) {
-    const inv = await prisma.investment.create({ data });
+export async function createInvestment(data: { symbol: string; name: string; type: string; shares: number; averageBuyPrice: number; currentPrice: number; currency: string; category?: string }) {
+    const inv = await prisma.investment.create({
+        data: {
+            ...data,
+            category: data.category || "Liquid Assets"
+        }
+    });
     revalidatePath("/");
     return inv;
 }
