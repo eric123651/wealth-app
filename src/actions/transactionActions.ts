@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+// V1.0.1 - Fixed Transaction Types for Supabase
 export async function getTransactions() {
     return await prisma.transaction.findMany({
         orderBy: { date: "desc" },
@@ -9,10 +10,25 @@ export async function getTransactions() {
     });
 }
 
-export async function createTransaction(data: { amount: number; type: string; accountId: string; category?: string; note?: string; date?: Date; currency: string }) {
+export async function createTransaction(data: {
+    amount: number;
+    type: string;
+    accountId: string;
+    category?: string;
+    note?: string;
+    date?: Date;
+    currency: string;
+    description?: string;
+}) {
     const transaction = await prisma.transaction.create({
         data: {
-            ...data,
+            amount: data.amount,
+            type: data.type,
+            accountId: data.accountId,
+            category: data.category,
+            note: data.note,
+            currency: data.currency,
+            description: data.description || "",
             date: data.date || new Date(),
         }
     });
