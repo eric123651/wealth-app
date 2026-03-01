@@ -9,20 +9,26 @@ export async function getTransactions() {
     });
 }
 
-
-
-// Update account balance automatically
-const account = await prisma.account.findUnique({ where: { id: data.accountId } });
-if (account) {
-    const multiplier = data.type === "INCOME" ? 1 : -1;
-    await prisma.account.update({
-        where: { id: data.accountId },
-        data: { balance: account.balance + (data.amount * multiplier) }
+export async function createTransaction(data: { amount: number; type: string; accountId: string; category?: string; note?: string; date?: Date; currency: string }) {
+    const transaction = await prisma.transaction.create({
+        data: {
+            ...data,
+            date: data.date || new Date(),
+        }
     });
-}
 
-revalidatePath("/");
-return transaction;
+    // Update account balance automatically
+    const account = await prisma.account.findUnique({ where: { id: data.accountId } });
+    if (account) {
+        const multiplier = data.type === "INCOME" ? 1 : -1;
+        await prisma.account.update({
+            where: { id: data.accountId },
+            data: { balance: account.balance + (data.amount * multiplier) }
+        });
+    }
+
+    revalidatePath("/");
+    return transaction;
 }
 
 export async function deleteTransaction(id: string) {
