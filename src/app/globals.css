@@ -35,6 +35,9 @@
 
 @layer base {
   :root {
+    /* Tell Safari/Chrome to always render in light mode — prevents color washing */
+    color-scheme: light;
+
     --background: 220 20% 97%;
     --foreground: 222.2 84% 4.9%;
 
@@ -67,6 +70,8 @@
   }
 
   .dark {
+    color-scheme: dark;
+
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -95,19 +100,18 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
   }
-}
 
-@layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
     /* Soft background gradient */
     background: linear-gradient(135deg, hsl(var(--background)), #e2e8f0);
     background-attachment: fixed;
   }
-  
+
   .dark body {
     background: linear-gradient(135deg, hsl(var(--background)), #1e293b);
     background-attachment: fixed;
