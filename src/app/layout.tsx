@@ -8,13 +8,19 @@ export const metadata = {
   title: "Wealth App",
   description: "Personal Property and Investment Management",
   manifest: "/manifest.json",
-  themeColor: "#4f46e5",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Wealth App",
   },
+};
+
+export const viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -23,14 +29,32 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-TW" className="antialiased" style={{ colorScheme: 'light' }}>
+    <html lang="zh-TW" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        {/* Lock to light mode so Safari doesn't wash out colors */}
-        <meta name="color-scheme" content="light" />
-        <meta name="supported-color-schemes" content="light" />
+        {/* Inline script: run before first paint to set dark class — no flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var mq = window.matchMedia('(prefers-color-scheme: dark)');
+                if (mq.matches) {
+                  document.documentElement.classList.add('dark');
+                }
+                // Listen for future system changes
+                mq.addEventListener('change', function(e) {
+                  if (e.matches) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                });
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className={`${inter.className} min-h-screen text-slate-800 dark:text-slate-100 flex flex-col`}>
+      <body className={`${inter.className} min-h-screen text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300`}>
         <Navbar />
         <main className="flex-grow pt-20 pb-16 px-4 md:px-8 max-w-7xl mx-auto w-full">
           {children}
