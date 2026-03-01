@@ -39,6 +39,8 @@ model Transaction {
   type        String   // INCOME, EXPENSE
   amount      Float
   currency    String
-  description String
+  category    String?
+  note        String?
+  description String?
   date        DateTime @default(now())
 }
