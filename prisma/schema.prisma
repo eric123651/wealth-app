@@ -3,40 +3,40 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Account {
-  id        String   @id @default(cuid())
-  name      String   // e.g., "台幣國泰", "美金帳號", "房貸"
-  type      String   // LIQUID_ASSET, FIXED_ASSET, LIABILITY
-  currency            String   @default("TWD")
-  balance             Float    @default(0)
-  monthlyPayment      Float?
-  lastDeductedMonth   String?  // e.g., "2024-03"
-  transactions        Transaction[]
+  id                String        @id @default(cuid())
+  name              String
+  type              String        // ASSET, LIABILITY
+  currency          String        // TWD, USD, CNY
+  balance           Float
+  monthlyPayment    Float         @default(0)
+  lastDeductedMonth String?       // YYYY-MM
+  transactions      Transaction[]
+}
+
+model Investment {
+  id           String   @id @default(cuid())
+  name         String   // e.g. "NVDA", "0050"
+  type         String   // STOCK, FUND, BOND, CRYPTO
+  currency     String   // TWD, USD, CNY
+  shares       Float
+  currentPrice Float
+  category     String   // e.g. "Liquid Assets", "Fixed Assets"
+  updatedAt    DateTime @updatedAt
 }
 
 model Transaction {
   id          String   @id @default(cuid())
-  amount      Float
-  type        String   // INCOME, EXPENSE, TRANSFER
-  currency    String   @default("TWD")
-  category    String?  // e.g., "Food", "Salary"
-  note        String?
-  date        DateTime @default(now())
   accountId   String
   account     Account  @relation(fields: [accountId], references: [id])
-}
-
-model Investment {
-  id               String   @id @default(cuid())
-  symbol           String   // e.g., "NVDA"
-  name             String   // e.g., "Nvidia"
-  type             String   // STOCK, FUND
-  currency         String   @default("USD")
-  shares           Float
-  averageBuyPrice  Float
-  currentPrice     Float    // Can be updated manually or via API later
+  type        String   // INCOME, EXPENSE
+  amount      Float
+  currency    String
+  description String
+  date        DateTime @default(now())
 }
