@@ -1,20 +1,32 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
 
 export async function getAccounts() {
+    const user = await requireAuth();
     return await prisma.account.findMany({
+        where: { userId: user.userId },
         orderBy: { type: "asc" },
     });
 }
 
 export async function createAccount(data: { name: string; type: string; currency: string; balance: number; monthlyPayment?: number }) {
-    const account = await prisma.account.create({ data });
+    const user = await requireAuth();
+    const account = await prisma.account.create({
+        data: { ...data, userId: user.userId }
+    });
     revalidatePath("/");
     return account;
 }
 
 export async function updateAccountBalance(id: string, balance: number) {
+    const user = await requireAuth();
+
+    // Verify ownership
+    const existing = await prisma.account.findUnique({ where: { id } });
+    if (!existing || existing.userId !== user.userId) throw new Error("Unauthorized");
+
     const account = await prisma.account.update({
         where: { id },
         data: { balance },
@@ -24,15 +36,18 @@ export async function updateAccountBalance(id: string, balance: number) {
 }
 
 export async function deleteAccount(id: string) {
-    await prisma.account.delete({ where: { id } });
+    const user = await requireAuth();
+    await prisma.account.deleteMany({ where: { id, userId: user.userId } });
     revalidatePath("/");
 }
 
 export async function processMonthlyDeductions() {
+    const user = await requireAuth();
     const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
 
     const liabilities = await prisma.account.findMany({
         where: {
+            userId: user.userId,
             type: "LIABILITY",
             monthlyPayment: { gt: 0 },
         },
@@ -51,5 +66,4 @@ export async function processMonthlyDeductions() {
             },
         });
     }
-    // No revalidatePath here - the dashboard page itself will read fresh data after this awaited call
 }

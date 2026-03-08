@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, WalletCards, TrendingUp, MessageSquareText } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LayoutDashboard, WalletCards, TrendingUp, MessageSquareText, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Navbar() {
     const pathname = usePathname();
+    const router = useRouter();
+
+    if (pathname === "/login" || pathname === "/register") return null;
 
     const navItems = [
         { name: "總覽Dashboard", href: "/", icon: LayoutDashboard },
@@ -14,6 +17,12 @@ export default function Navbar() {
         { name: "投資組合", href: "/investments", icon: TrendingUp },
         { name: "AI記帳", href: "/chat", icon: MessageSquareText },
     ];
+
+    const handleLogout = async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        router.push("/login");
+        router.refresh();
+    };
 
     return (
         <>
@@ -51,6 +60,13 @@ export default function Navbar() {
                                     </Link>
                                 );
                             })}
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-rose-500 transition-colors"
+                            >
+                                <LogOut size={18} />
+                                登出
+                            </button>
                         </nav>
                     </div>
                 </div>
@@ -74,6 +90,13 @@ export default function Navbar() {
                             </Link>
                         );
                     })}
+                    <button
+                        onClick={handleLogout}
+                        className="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-500 hover:text-rose-500 transition-colors"
+                    >
+                        <LogOut size={24} />
+                        <span className="text-[10px] font-medium">登出</span>
+                    </button>
                 </div>
             </nav>
         </>

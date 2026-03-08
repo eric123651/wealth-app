@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { parseAndSaveChatMessage } from "@/actions/chatActions";
 import { getTransactions, deleteTransaction } from "@/actions/transactionActions";
+import { getAccounts } from "@/actions/accountActions";
 import { Send, Bot, User, Trash2, ArrowRightLeft } from "lucide-react";
 import QuickTags from "@/components/QuickTags";
 
@@ -17,11 +18,21 @@ export default function ChatPage() {
     const [currency, setCurrency] = useState("TWD");
     const [isLoading, setIsLoading] = useState(false);
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [liabilityTags, setLiabilityTags] = useState<string[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         loadTransactions();
+        loadLiabilities();
     }, []);
+
+    const loadLiabilities = async () => {
+        const accounts = await getAccounts();
+        const tags = accounts
+            .filter(a => a.type === "LIABILITY" && a.monthlyPayment && a.monthlyPayment > 0)
+            .map(a => `繳${a.name} ${a.monthlyPayment}`);
+        setLiabilityTags(tags);
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,7 +106,7 @@ export default function ChatPage() {
                 </div>
 
                 <div className="px-4 pt-2">
-                    <QuickTags onSelect={(tagText) => setInput(tagText)} />
+                    <QuickTags onSelect={(tagText) => setInput(tagText)} dynamicTags={liabilityTags} />
                 </div>
 
                 <form onSubmit={handleSend} className="p-4 border-t border-indigo-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex flex-col gap-3">

@@ -2,6 +2,7 @@ import { getAccounts, processMonthlyDeductions } from "@/actions/accountActions"
 import { getInvestments } from "@/actions/investmentActions";
 import AssetAllocationChart from "@/components/AssetAllocationChart";
 import DashboardSummaryCards from "@/components/DashboardSummaryCards";
+import CashFlowPredictor from "@/components/CashFlowPredictor";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function Dashboard() {
   const liquidAssetsByCurrency = groupByCurrency(accounts.filter(a => a.type === "LIQUID_ASSET"), a => a.balance);
   const fixedAssetsByCurrency = groupByCurrency(accounts.filter(a => a.type === "FIXED_ASSET"), a => a.balance);
   const liabilitiesByCurrency = groupByCurrency(accounts.filter(a => a.type === "LIABILITY"), a => a.balance);
+  const liabilitiesMonthlyByCurrency = groupByCurrency(accounts.filter(a => a.type === "LIABILITY"), a => a.monthlyPayment || 0);
   const investmentsByCurrency = groupByCurrency(investments, inv => inv.shares * inv.currentPrice);
 
   const allCurrencies = Array.from(new Set([
@@ -86,15 +88,10 @@ export default async function Dashboard() {
           <AssetAllocationChart data={chartData} />
         </div>
 
-        <div className="glass rounded-2xl p-6 flex flex-col justify-center items-center text-center space-y-4">
-          <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
-            <span className="text-2xl">🌱</span>
-          </div>
-          <h3 className="text-lg font-semibold">讓AI幫您記帳</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            切換到「AI記帳」分頁，輸入對話即可自動記錄您的收支。
-          </p>
-        </div>
+        <CashFlowPredictor
+          liquidAssetsByCurrency={liquidAssetsByCurrency}
+          liabilitiesMonthlyByCurrency={liabilitiesMonthlyByCurrency}
+        />
       </div>
     </div >
   );

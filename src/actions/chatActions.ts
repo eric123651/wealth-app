@@ -1,22 +1,33 @@
 "use server";
 import { createTransaction } from "./transactionActions";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
 export async function parseAndSaveChatMessage(message: string, typeHint: "AUTO" | "EXPENSE" | "INCOME" = "AUTO", currencyHint: string = "TWD") {
-    // Very basic regex: looking for an optional category then numbers
-    // e.g., "晚餐 150", "買飲料100", "薪水 +50000"
+    const user = await requireAuth();
 
-    // Try to find numbers
-    const amountMatch = message.match(/[\d,.]+/);
-    if (!amountMatch) {
-        return { success: false, message: "❌ 找不到金額，請重新輸入（例如：午餐 100）" };
+    // Improved number extraction: look for numbers with optional units (元, 塊, $) next to it
+    // Or just grab the last number in the string if no unit is found
+    const matchesWithUnits = message.match(/(?:[\$])?\s*([\d,.]+)\s*(?:元|塊)/);
+    let amountStr = "";
+    let matchedStr = "";
+
+    if (matchesWithUnits) {
+        amountStr = matchesWithUnits[1];
+        matchedStr = matchesWithUnits[0];
+    } else {
+        const allNumbers = message.match(/[\d,.]+/g);
+        if (allNumbers && allNumbers.length > 0) {
+            // Pick the last number as the amount, e.g., "買50嵐 100" -> 100
+            amountStr = allNumbers[allNumbers.length - 1];
+            matchedStr = amountStr;
+        } else {
+            return { success: false, message: "❌ 找不到金額，請重新輸入（例如：買50嵐 100塊）" };
+        }
     }
 
-    const amountStr = amountMatch[0].replace(/,/g, '');
-    let amount = parseFloat(amountStr);
+    const amount = parseFloat(amountStr.replace(/,/g, ''));
 
-    // Try to find if it's income or expense
-    // default to expense, income if explicitly has + or keywords
     let type = "EXPENSE";
     if (typeHint && typeHint !== "AUTO") {
         type = typeHint;
@@ -24,29 +35,49 @@ export async function parseAndSaveChatMessage(message: string, typeHint: "AUTO" 
         type = "INCOME";
     }
 
-    // Find category (everything except the amount and some fluff)
-    let category = message.replace(amountMatch[0], '')
+    // Isolate the category text by removing the matched amount part and some noise characters
+    let category = message.replace(matchedStr, '')
         .replace(/[+買花]/g, '')
         .trim();
-    if (!category) {
+
+    if (!category || /^\d+$/.test(category)) {
         category = "未分類";
     }
 
-    // Find a default account matching the currency (or just pick the first liquid asset)
-    let defaultAccount = await prisma.account.findFirst({
-        where: { type: "LIQUID_ASSET", currency: currencyHint }
-    });
+    let targetAccount = null;
 
-    if (!defaultAccount) {
-        defaultAccount = await prisma.account.findFirst({
-            where: { type: "LIQUID_ASSET" }
+    // Check if the message is paying a liability
+    if (type === "EXPENSE") {
+        const liabilities = await prisma.account.findMany({
+            where: { userId: user.userId, type: "LIABILITY" }
+        });
+
+        // Match liability name in the message
+        const matchedLiability = liabilities.find(l => message.includes(l.name));
+
+        if (matchedLiability) {
+            targetAccount = matchedLiability;
+            category = `繳納${matchedLiability.name}`;
+            // Currency will match the liability's currency
+            currencyHint = matchedLiability.currency || currencyHint;
+        }
+    }
+
+    if (!targetAccount) {
+        targetAccount = await prisma.account.findFirst({
+            where: { userId: user.userId, type: "LIQUID_ASSET", currency: currencyHint }
         });
     }
 
-    // If no account exists, create a dummy one
-    if (!defaultAccount) {
-        defaultAccount = await prisma.account.create({
-            data: { name: "預設錢包", type: "LIQUID_ASSET", currency: currencyHint, balance: 0 }
+    if (!targetAccount) {
+        targetAccount = await prisma.account.findFirst({
+            where: { userId: user.userId, type: "LIQUID_ASSET" }
+        });
+    }
+
+    if (!targetAccount) {
+        targetAccount = await prisma.account.create({
+            data: { userId: user.userId, name: "預設錢包", type: "LIQUID_ASSET", currency: currencyHint, balance: 0 }
         });
     }
 
@@ -55,7 +86,7 @@ export async function parseAndSaveChatMessage(message: string, typeHint: "AUTO" 
             amount,
             type,
             category,
-            accountId: defaultAccount.id,
+            accountId: targetAccount.id,
             currency: currencyHint,
             note: `原始訊息: ${message}`
         });

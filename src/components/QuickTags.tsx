@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Tag } from "lucide-react";
 
-export default function QuickTags({ onSelect }: { onSelect: (tag: string) => void }) {
+export default function QuickTags({ onSelect, dynamicTags = [] }: { onSelect: (tag: string) => void, dynamicTags?: string[] }) {
     const [tags, setTags] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [newTag, setNewTag] = useState("");
@@ -19,7 +19,7 @@ export default function QuickTags({ onSelect }: { onSelect: (tag: string) => voi
             }
         } else {
             // Default tags
-            setTags(["午餐 150", "房租 15000", "Netflix 390"]);
+            setTags(["午餐 150", "備用 500"]);
         }
     }, []);
 
@@ -46,6 +46,21 @@ export default function QuickTags({ onSelect }: { onSelect: (tag: string) => voi
     return (
         <div className="w-full flex items-center justify-start gap-2 flex-wrap mb-2 px-1">
             <Tag className="w-4 h-4 text-slate-400 shrink-0 mr-1" />
+
+            {/* Dynamic Tags (e.g. Liabilities) */}
+            {dynamicTags.map(tag => (
+                <button
+                    key={tag}
+                    type="button"
+                    onClick={() => onSelect(tag)}
+                    className="group relative px-3 py-1 bg-rose-50 dark:bg-rose-900/40 border border-rose-200 dark:border-rose-700/50 hover:border-rose-400 dark:hover:border-rose-500 rounded-full text-sm text-rose-700 dark:text-rose-300 transition-all flex items-center"
+                    title="系統自動產生"
+                >
+                    {tag}
+                </button>
+            ))}
+
+            {/* User Tags */}
             {tags.map(tag => (
                 <button
                     key={tag}
